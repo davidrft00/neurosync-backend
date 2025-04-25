@@ -1,14 +1,14 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import os
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 
-load_dotenv()
+openai.api_key = os.getenv(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)
 
 app = FastAPI()
 
+# Libera acesso do frontend (se for usar)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,26 +17,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 class PromptRequest(BaseModel):
-    user_input: str
-
-@app.post("/generate-tip")
-async def generate_tip(request: PromptRequest):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an expert productivity coach."},
-                {"role": "user", "content": request.user_input}
-            ]
-        )
-        tip = response.choices[0].message.content.strip()
-        return {"tip": tip}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    prompt: str
 
 @app.get("/")
 async def root():
-    return {"message": "NeuroSync AI Backend is running."}
+    return {"message": "NeuroSync AI Backend is running"}
+
+@app.post("/neurosync")
+async def neurosync(request: PromptRequest):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": request.prompt}]
+        )
+        return {"response": response['choices'][0]['message']['content']}
+    except Exception as e:
+        return {"error": str(e)}
+
